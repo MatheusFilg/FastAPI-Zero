@@ -74,7 +74,7 @@ def test_update_user(client, user, token):
 
 def test_update_user_not_found(client, user):
     response = client.put(
-        '/users/2',
+        f'/users/{user.id}',
         json={
             'username': 'bob',
             'email': 'bob@example.com',
@@ -96,14 +96,14 @@ def test_delete_user(client, user, token):
 
 
 def test_delete_user_not_found(client, user):
-    response = client.delete('users/2')
+    response = client.delete(f'users/{user.id}')
 
     assert response.status_code == 401
     assert response.json() == {'detail': 'Not authenticated'}
 
 
 def test_get_user(client, user):
-    response = client.get('/users/1')
+    response = client.get(f'/users/{user.id}')
     assert response.status_code == 200
     assert response.json() == {
         'username': user.username,
@@ -112,8 +112,33 @@ def test_get_user(client, user):
     }
 
 
-def test_get_user_not_found(client, user):
-    response = client.get('/users/2')
+def test_get_user_not_found(client):
+    response = client.get(
+        '/users/101',
+    )
 
     assert response.status_code == 404
     assert response.json() == {'detail': 'User not found'}
+
+
+def test_update_user_with_wrong_user(client, other_user, token):
+    response = client.put(
+        f'/users/{other_user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+        json={
+            'username': 'bob',
+            'email': 'bob@example.com',
+            'password': 'mynewpassword',
+        },
+    )
+    assert response.status_code == 400
+    assert response.json() == {'detail': 'Not enough permissions'}
+
+
+def test_delete_user_with_wrong_user(client, other_user, token):
+    response = client.delete(
+        f'/users/{other_user.id}', headers={'Authorization': f'Bearer {token}'}
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {'detail': 'Not enough permissions'}
