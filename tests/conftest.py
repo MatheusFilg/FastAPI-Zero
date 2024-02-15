@@ -40,9 +40,12 @@ def session():
         connect_args={'check_same_thread': False},
         poolclass=StaticPool,
     )
+    Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    yield Session()
+    with Session() as session:
+        yield Session()
+        session.rollback()
+
     Base.metadata.drop_all(engine)
 
 
